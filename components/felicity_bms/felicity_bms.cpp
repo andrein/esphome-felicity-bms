@@ -2,6 +2,7 @@
 #include "esphome/core/log.h"
 #include "esphome/components/json/json_util.h"
 
+#include <cmath>
 #include <cstring>
 
 namespace esphome {
@@ -11,6 +12,19 @@ namespace espbt = esp32_ble_tracker;
 
 static const char *const TAG = "felicity_bms";
 static const char *const POLL_CMD = "wifilocalMonitor:get dev real infor";
+
+// Publish only on change to keep the API send buffer from overflowing.
+static void pub(sensor::Sensor *s, float v) {
+  if (s == nullptr)
+    return;
+  bool cur_nan = std::isnan(s->state), v_nan = std::isnan(v);
+  if (cur_nan != v_nan || (!v_nan && std::fabs(s->state - v) > 1e-4f))
+    s->publish_state(v);
+}
+static void pub(binary_sensor::BinarySensor *s, bool v) {
+  if (s != nullptr && (!s->has_state() || s->state != v))
+    s->publish_state(v);
+}
 
 static espbt::ESPBTUUID service_uuid() {
   return espbt::ESPBTUUID::from_raw("6e6f736a-4643-4d44-8fa9-0fafd005e455");
@@ -107,16 +121,63 @@ void FelicityBMS::feed_(const uint8_t *data, uint16_t len) {
 }
 
 void FelicityBMS::handle_frame_(const std::string &frame) {
-  json::parse_json(frame, [](JsonObject root) -> bool {
+  json::parse_json(frame, [this](JsonObject root) -> bool {
     if (root["CommVer"].as<int>() != 1)
       return false;
+
     JsonArray batt = root["Batt"].as<JsonArray>();
+    if (!batt.isNull()) {
+      float v = batt[0][0].as<long>() / 1000.0f;
+      float i = batt[1][0].as<long>() / 10.0f;
+      pub(this->voltage_, v);
+      pub(this->current_, i);
+      pub(this->power_, v * i);
+    }
+
     JsonArray soc = root["BatsocList"].as<JsonArray>();
+    if (!soc.isNull())
+      pub(this->soc_, soc[0][0].as<long>() / 100.0f);
+
     JsonArray cells = root["BatcelList"][0].as<JsonArray>();
-    float v = batt.isNull() ? 0.0f : batt[0][0].as<long>() / 1000.0f;
-    float i = batt.isNull() ? 0.0f : batt[1][0].as<long>() / 10.0f;
-    float s = soc.isNull() ? 0.0f : soc[0][0].as<long>() / 100.0f;
-    ESP_LOGD(TAG, "V=%.2f I=%.1f SOC=%.1f cells=%d", v, i, s, cells.isNull() ? 0 : (int) cells.size());
+    if (!cells.isNull()) {
+      long mn = 1000000, mx = -1000000;
+      uint8_t idx = 0;
+      for (JsonVariant cv : cells) {
+        long mv = cv.as<long>();
+        if (idx < CELL_COUNT)
+          pub(this->cell_voltage_[idx], mv / 1000.0f);
+        if (mv > 0 && mv < 60000) {
+          if (mv < mn)
+            mn = mv;
+          if (mv > mx)
+            mx = mv;
+        }
+        idx++;
+      }
+      if (mx >= mn) {
+        pub(this->min_cell_voltage_, mn / 1000.0f);
+        pub(this->max_cell_voltage_, mx / 1000.0f);
+        pub(this->cell_delta_, (float) (mx - mn));
+      }
+    }
+
+    JsonArray temps = root["BtemList"][0].as<JsonArray>();
+    if (!temps.isNull()) {
+      float tmax = -1000.0f;
+      uint8_t idx = 0;
+      for (JsonVariant tv : temps) {
+        long raw = tv.as<long>();
+        if (idx < TEMP_COUNT)
+          pub(this->temperature_[idx], (raw == 32767) ? NAN : raw / 10.0f);
+        if (raw != 32767 && raw / 10.0f > tmax)
+          tmax = raw / 10.0f;
+        idx++;
+      }
+      if (tmax > -1000.0f)
+        pub(this->max_temperature_, tmax);
+    }
+
+    pub(this->problem_, (root["Bfault"].as<long>() + root["Bwarn"].as<long>()) != 0);
     return true;
   });
 }

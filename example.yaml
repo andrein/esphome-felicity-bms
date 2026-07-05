@@ -1,0 +1,78 @@
+# Minimal example: one Felicity battery read natively over BLE.
+esphome:
+  name: felicity-example
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+api:
+ota:
+  - platform: esphome
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+external_components:
+  - source: github://andrein/esphome-felicity-bms
+    components: [felicity_bms]
+
+# Required so the ESP32 can enter the pairing passkey.
+esp32_ble:
+  io_capability: keyboard_only
+  auth_req_mode: sc_mitm_bond
+
+esp32_ble_tracker:
+
+ble_client:
+  - mac_address: A4:05:FD:18:84:3E
+    id: bat_client
+    on_passkey_request:
+      then:
+        - ble_client.passkey_reply:
+            id: bat_client
+            passkey: 123456
+
+felicity_bms:
+  - id: bat
+    ble_client_id: bat_client
+    update_interval: 10s
+
+sensor:
+  - platform: felicity_bms
+    felicity_bms_id: bat
+    voltage: {name: Battery Voltage}
+    current: {name: Battery Current}
+    power: {name: Battery Power}
+    soc: {name: Battery SOC}
+    min_cell_voltage: {name: Cell min}
+    max_cell_voltage: {name: Cell max}
+    cell_delta: {name: Cell delta}
+    max_temperature: {name: Temp max}
+    cell_voltage_1: {name: Cell 01}
+    cell_voltage_2: {name: Cell 02}
+    cell_voltage_3: {name: Cell 03}
+    cell_voltage_4: {name: Cell 04}
+    cell_voltage_5: {name: Cell 05}
+    cell_voltage_6: {name: Cell 06}
+    cell_voltage_7: {name: Cell 07}
+    cell_voltage_8: {name: Cell 08}
+    cell_voltage_9: {name: Cell 09}
+    cell_voltage_10: {name: Cell 10}
+    cell_voltage_11: {name: Cell 11}
+    cell_voltage_12: {name: Cell 12}
+    cell_voltage_13: {name: Cell 13}
+    cell_voltage_14: {name: Cell 14}
+    cell_voltage_15: {name: Cell 15}
+    cell_voltage_16: {name: Cell 16}
+    temperature_1: {name: Temp 1}
+    temperature_2: {name: Temp 2}
+    temperature_3: {name: Temp 3}
+    temperature_4: {name: Temp 4}
+
+binary_sensor:
+  - platform: felicity_bms
+    felicity_bms_id: bat
+    problem: {name: Battery Problem}
