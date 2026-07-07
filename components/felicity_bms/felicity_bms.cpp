@@ -144,7 +144,10 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
       uint8_t idx = 0;
       for (JsonVariant cv : cells) {
         long mv = cv.as<long>();
-        if (idx < CELL_COUNT)
+        // Only publish plausible readings; a garbled/partial BLE frame can yield
+        // 0 (or junk) for a cell, and an unconditional publish pushes that 0 into
+        // HA history. Same guard the min/max accumulation below uses.
+        if (idx < CELL_COUNT && mv > 0 && mv < 60000)
           pub(this->cell_voltage_[idx], mv / 1000.0f);
         if (mv > 0 && mv < 60000) {
           if (mv < mn)
