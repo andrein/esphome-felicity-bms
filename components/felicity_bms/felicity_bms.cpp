@@ -126,10 +126,12 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
     if (root["CommVer"].as<int>() != 1)
       return false;
 
-    JsonArray batt = root["Batt"].as<JsonArray>();
+    // "BattList" holds THIS unit's own V/I; "Batt" is the whole-bank aggregate that
+    // every parallel pack echoes (summing it across packs double-counts). Use per-unit.
+    JsonArray batt = root["BattList"].as<JsonArray>();
     if (!batt.isNull()) {
-      float v = batt[0][0].as<long>() / 1000.0f;
-      float i = batt[1][0].as<long>() / 10.0f;
+      float v = batt[0][0].as<long>() / 1000.0f;  // BattList[0][0] = this pack voltage (mV)
+      float i = batt[1][0].as<long>() / 10.0f;    // BattList[1][0] = this pack current (0.1 A)
       pub(this->voltage_, v);
       pub(this->current_, i);
       pub(this->power_, v * i);
