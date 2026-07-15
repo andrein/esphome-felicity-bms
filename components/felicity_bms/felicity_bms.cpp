@@ -121,6 +121,7 @@ void FelicityBMS::feed_(const uint8_t *data, uint16_t len) {
 }
 
 void FelicityBMS::handle_frame_(const std::string &frame) {
+  ESP_LOGV(TAG, "raw frame: %s", frame.c_str());
   json::parse_json(frame, [this](JsonObject root) -> bool {
     if (root["CommVer"].as<int>() != 1)
       return false;
