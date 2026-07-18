@@ -77,6 +77,5 @@ sensor:
 binary_sensor:
   - platform: felicity_bms
     felicity_bms_id: bat
-    problem: {name: Battery Problem}  # fault OR warning
     fault: {name: Battery Fault}
     warning: {name: Battery Warning}

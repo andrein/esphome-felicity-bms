@@ -198,7 +198,6 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
     pub(this->warning_code_, (float) warning);
     pub(this->fault_, fault != 0);
     pub(this->warning_, warning != 0);
-    pub(this->problem_, (fault | warning) != 0);
     return true;
   });
 }

@@ -34,7 +34,6 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   void set_temperature_sensor(uint8_t i, sensor::Sensor *s) { this->temperature_[i] = s; }
   void set_fault_code_sensor(sensor::Sensor *s) { this->fault_code_ = s; }
   void set_warning_code_sensor(sensor::Sensor *s) { this->warning_code_ = s; }
-  void set_problem_binary_sensor(binary_sensor::BinarySensor *s) { this->problem_ = s; }
   void set_fault_binary_sensor(binary_sensor::BinarySensor *s) { this->fault_ = s; }
   void set_warning_binary_sensor(binary_sensor::BinarySensor *s) { this->warning_ = s; }
 
@@ -58,7 +57,6 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   sensor::Sensor *temperature_[TEMP_COUNT]{};
   sensor::Sensor *fault_code_{nullptr};
   sensor::Sensor *warning_code_{nullptr};
-  binary_sensor::BinarySensor *problem_{nullptr};
   binary_sensor::BinarySensor *fault_{nullptr};
   binary_sensor::BinarySensor *warning_{nullptr};
 };

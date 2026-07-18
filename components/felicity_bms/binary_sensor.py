@@ -5,11 +5,9 @@ from esphome.const import DEVICE_CLASS_PROBLEM, ENTITY_CATEGORY_DIAGNOSTIC
 
 from . import CONF_FELICITY_BMS_ID, FelicityBMS
 
-# key -> setter. "problem" = fault OR warning (kept for backward compatibility);
-# "fault"/"warning" mirror Bfault/Bwarn individually so automations can alert on
-# faults without also firing for benign warnings.
+# key -> setter. "fault"/"warning" mirror Bfault/Bwarn individually so automations
+# can alert on faults without also firing for benign warnings.
 FLAGS = {
-    "problem": "set_problem_binary_sensor",
     "fault": "set_fault_binary_sensor",
     "warning": "set_warning_binary_sensor",
 }

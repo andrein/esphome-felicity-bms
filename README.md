@@ -14,7 +14,7 @@ data. That breaks the usual Home Assistant paths:
 
 This component runs on an ESP32 near the batteries, bonds with the passkey using
 ESPHome's `ble_client`, and publishes voltage, current, power, SOC, per-cell
-voltages, temperatures and a problem flag — no Home Assistant BLE stack involved.
+voltages, temperatures and fault/warning flags — no Home Assistant BLE stack involved.
 
 ## Requirements
 
@@ -79,7 +79,6 @@ sensor:
 binary_sensor:
   - platform: felicity_bms
     felicity_bms_id: bat
-    problem: {name: Problem}  # fault OR warning
     fault: {name: Fault}
     warning: {name: Warning}
 ```
@@ -95,7 +94,7 @@ right after a (re)connect the battery's monitor MCU can answer with a valid but
 zero-initialized snapshot, which would otherwise publish 0 V / 0 % / 0 °C spikes.
 
 Per-cell voltages, individual temperatures, cell min/max/delta, max temperature
-and the problem/fault/warning flags default to `entity_category: diagnostic`.
+and the fault/warning flags default to `entity_category: diagnostic`.
 
 ## License
 
