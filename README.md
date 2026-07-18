@@ -73,15 +73,29 @@ sensor:
     # ... cell_voltage_2 .. cell_voltage_16
     temperature_1: {name: Temp 1}
     # ... temperature_2 .. temperature_4
+    fault_code: {name: Fault code}
+    warning_code: {name: Warning code}
 
 binary_sensor:
   - platform: felicity_bms
     felicity_bms_id: bat
-    problem: {name: Problem}
+    problem: {name: Problem}  # fault OR warning
+    fault: {name: Fault}
+    warning: {name: Warning}
 ```
 
+`fault`/`warning` mirror the BMS `Bfault`/`Bwarn` words individually — alert on
+`fault` if you don't want notifications for benign warnings (e.g. the cell
+overvoltage warning some packs raise at top of charge). `fault_code` and
+`warning_code` expose the raw values; Felicity doesn't document the bit layout,
+so the codes are the only way to tell conditions apart.
+
+Frames whose pack voltage is implausible (outside 10–70 V) are dropped whole:
+right after a (re)connect the battery's monitor MCU can answer with a valid but
+zero-initialized snapshot, which would otherwise publish 0 V / 0 % / 0 °C spikes.
+
 Per-cell voltages, individual temperatures, cell min/max/delta, max temperature
-and the problem flag default to `entity_category: diagnostic`.
+and the problem/fault/warning flags default to `entity_category: diagnostic`.
 
 ## License
 

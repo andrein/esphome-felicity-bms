@@ -71,8 +71,12 @@ sensor:
     temperature_2: {name: Temp 2}
     temperature_3: {name: Temp 3}
     temperature_4: {name: Temp 4}
+    fault_code: {name: Fault code}
+    warning_code: {name: Warning code}
 
 binary_sensor:
   - platform: felicity_bms
     felicity_bms_id: bat
-    problem: {name: Battery Problem}
+    problem: {name: Battery Problem}  # fault OR warning
+    fault: {name: Battery Fault}
+    warning: {name: Battery Warning}

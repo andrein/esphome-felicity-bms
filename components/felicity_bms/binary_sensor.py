@@ -5,21 +5,34 @@ from esphome.const import DEVICE_CLASS_PROBLEM, ENTITY_CATEGORY_DIAGNOSTIC
 
 from . import CONF_FELICITY_BMS_ID, FelicityBMS
 
-CONF_PROBLEM = "problem"
+# key -> setter. "problem" = fault OR warning (kept for backward compatibility);
+# "fault"/"warning" mirror Bfault/Bwarn individually so automations can alert on
+# faults without also firing for benign warnings.
+FLAGS = {
+    "problem": "set_problem_binary_sensor",
+    "fault": "set_fault_binary_sensor",
+    "warning": "set_warning_binary_sensor",
+}
+
+
+def _flag_schema():
+    return binary_sensor.binary_sensor_schema(
+        device_class=DEVICE_CLASS_PROBLEM,
+        entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+    )
+
 
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(CONF_FELICITY_BMS_ID): cv.use_id(FelicityBMS),
-        cv.Optional(CONF_PROBLEM): binary_sensor.binary_sensor_schema(
-            device_class=DEVICE_CLASS_PROBLEM,
-            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-        ),
+        **{cv.Optional(key): _flag_schema() for key in FLAGS},
     }
 )
 
 
 async def to_code(config):
     hub = await cg.get_variable(config[CONF_FELICITY_BMS_ID])
-    if CONF_PROBLEM in config:
-        b = await binary_sensor.new_binary_sensor(config[CONF_PROBLEM])
-        cg.add(hub.set_problem_binary_sensor(b))
+    for key, setter in FLAGS.items():
+        if key in config:
+            b = await binary_sensor.new_binary_sensor(config[key])
+            cg.add(getattr(hub, setter)(b))

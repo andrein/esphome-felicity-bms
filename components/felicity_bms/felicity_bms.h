@@ -32,7 +32,11 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   void set_max_temperature_sensor(sensor::Sensor *s) { this->max_temperature_ = s; }
   void set_cell_voltage_sensor(uint8_t i, sensor::Sensor *s) { this->cell_voltage_[i] = s; }
   void set_temperature_sensor(uint8_t i, sensor::Sensor *s) { this->temperature_[i] = s; }
+  void set_fault_code_sensor(sensor::Sensor *s) { this->fault_code_ = s; }
+  void set_warning_code_sensor(sensor::Sensor *s) { this->warning_code_ = s; }
   void set_problem_binary_sensor(binary_sensor::BinarySensor *s) { this->problem_ = s; }
+  void set_fault_binary_sensor(binary_sensor::BinarySensor *s) { this->fault_ = s; }
+  void set_warning_binary_sensor(binary_sensor::BinarySensor *s) { this->warning_ = s; }
 
  protected:
   void feed_(const uint8_t *data, uint16_t len);
@@ -52,7 +56,11 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   sensor::Sensor *max_temperature_{nullptr};
   sensor::Sensor *cell_voltage_[CELL_COUNT]{};
   sensor::Sensor *temperature_[TEMP_COUNT]{};
+  sensor::Sensor *fault_code_{nullptr};
+  sensor::Sensor *warning_code_{nullptr};
   binary_sensor::BinarySensor *problem_{nullptr};
+  binary_sensor::BinarySensor *fault_{nullptr};
+  binary_sensor::BinarySensor *warning_{nullptr};
 };
 
 }  // namespace felicity_bms
