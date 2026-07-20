@@ -9,6 +9,15 @@ esp32:
 
 logger:
 api:
+  # Optional: omit `actions:` and no debug service exists. Returns the raw frame.
+  actions:
+    - action: felicity_dump_raw
+      supports_response: only
+      then:
+        - api.respond:
+            data: !lambda |-
+              root["raw"] = id(bat).get_last_raw_frame();
+              root["age_ms"] = id(bat).get_last_raw_frame_age_ms();
 ota:
   - platform: esphome
 wifi:

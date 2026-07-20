@@ -1,5 +1,6 @@
 #include "felicity_bms.h"
 #include "esphome/core/log.h"
+#include "esphome/core/hal.h"
 #include "esphome/components/json/json_util.h"
 
 #include <cmath>
@@ -39,6 +40,10 @@ static espbt::ESPBTUUID tx_uuid() {
 
 void FelicityBMS::dump_config() {
   ESP_LOGCONFIG(TAG, "Felicity BMS (update every %u ms)", (unsigned) this->get_update_interval());
+}
+
+uint32_t FelicityBMS::get_last_raw_frame_age_ms() const {
+  return this->last_frame_.empty() ? 0 : (millis() - this->last_frame_ms_);
 }
 
 void FelicityBMS::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
@@ -122,6 +127,8 @@ void FelicityBMS::feed_(const uint8_t *data, uint16_t len) {
 }
 
 void FelicityBMS::handle_frame_(const std::string &frame) {
+  this->last_frame_ = frame;
+  this->last_frame_ms_ = millis();
   ESP_LOGV(TAG, "raw frame: %s", frame.c_str());
   json::parse_json(frame, [this](JsonObject root) -> bool {
     if (root["CommVer"].as<int>() != 1)

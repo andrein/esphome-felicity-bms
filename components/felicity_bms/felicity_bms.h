@@ -38,6 +38,10 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   void set_fault_binary_sensor(binary_sensor::BinarySensor *s) { this->fault_ = s; }
   void set_warning_binary_sensor(binary_sensor::BinarySensor *s) { this->warning_ = s; }
 
+  // Latest raw frame, for a YAML api.respond debug action; empty until first rx.
+  const std::string &get_last_raw_frame() const { return this->last_frame_; }
+  uint32_t get_last_raw_frame_age_ms() const;
+
  protected:
   void feed_(const uint8_t *data, uint16_t len);
   void handle_frame_(const std::string &frame);
@@ -46,6 +50,10 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   uint16_t tx_handle_{0};
   std::string buffer_;
   float cell_voltage_min_change_{0.001f};  // volts; suppress sub-threshold cell noise
+
+  // Stored before parsing, so frames later dropped as implausible stay visible.
+  std::string last_frame_;
+  uint32_t last_frame_ms_{0};
 
   sensor::Sensor *voltage_{nullptr};
   sensor::Sensor *current_{nullptr};
