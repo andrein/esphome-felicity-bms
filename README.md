@@ -57,6 +57,7 @@ felicity_bms:
   - id: bat
     ble_client_id: bat_client
     update_interval: 10s
+    cell_voltage_min_change: 1mV   # min per-cell change to publish (default 1mV)
 
 sensor:
   - platform: felicity_bms
@@ -95,6 +96,12 @@ zero-initialized snapshot, which would otherwise publish 0 V / 0 % / 0 °C spike
 
 Per-cell voltages, individual temperatures, cell min/max/delta, max temperature
 and the fault/warning flags default to `entity_category: diagnostic`.
+
+Cells jitter at the mV level every poll, so publishing every change floods
+recorder history and makes 16-cell graphs slow to load. `cell_voltage_min_change`
+(default `1mV`) sets the minimum per-cell change that gets published — raise it
+to thin history further (`2mV` ≈ 3.5× fewer points, `5mV` ≈ 12×), all still far
+below any cell imbalance worth acting on.
 
 ## License
 

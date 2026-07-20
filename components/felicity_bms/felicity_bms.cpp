@@ -13,12 +13,13 @@ namespace espbt = esp32_ble_tracker;
 static const char *const TAG = "felicity_bms";
 static const char *const POLL_CMD = "wifilocalMonitor:get dev real infor";
 
-// Publish only on change to keep the API send buffer from overflowing.
-static void pub(sensor::Sensor *s, float v) {
+// Publish only on change (>= min_change) to keep the API send buffer from
+// overflowing and to avoid logging sub-threshold sensor noise into history.
+static void pub(sensor::Sensor *s, float v, float min_change = 1e-4f) {
   if (s == nullptr)
     return;
   bool cur_nan = std::isnan(s->state), v_nan = std::isnan(v);
-  if (cur_nan != v_nan || (!v_nan && std::fabs(s->state - v) > 1e-4f))
+  if (cur_nan != v_nan || (!v_nan && std::fabs(s->state - v) >= min_change))
     s->publish_state(v);
 }
 static void pub(binary_sensor::BinarySensor *s, bool v) {
@@ -158,7 +159,7 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
         // 0 (or junk) for a cell, and an unconditional publish pushes that 0 into
         // HA history. Same guard the min/max accumulation below uses.
         if (idx < CELL_COUNT && mv > 0 && mv < 60000)
-          pub(this->cell_voltage_[idx], mv / 1000.0f);
+          pub(this->cell_voltage_[idx], mv / 1000.0f, this->cell_voltage_min_change_);
         if (mv > 0 && mv < 60000) {
           if (mv < mn)
             mn = mv;

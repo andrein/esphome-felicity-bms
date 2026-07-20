@@ -32,6 +32,7 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   void set_max_temperature_sensor(sensor::Sensor *s) { this->max_temperature_ = s; }
   void set_cell_voltage_sensor(uint8_t i, sensor::Sensor *s) { this->cell_voltage_[i] = s; }
   void set_temperature_sensor(uint8_t i, sensor::Sensor *s) { this->temperature_[i] = s; }
+  void set_cell_voltage_min_change(float v) { this->cell_voltage_min_change_ = v; }
   void set_fault_code_sensor(sensor::Sensor *s) { this->fault_code_ = s; }
   void set_warning_code_sensor(sensor::Sensor *s) { this->warning_code_ = s; }
   void set_fault_binary_sensor(binary_sensor::BinarySensor *s) { this->fault_ = s; }
@@ -44,6 +45,7 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   uint16_t rx_handle_{0};
   uint16_t tx_handle_{0};
   std::string buffer_;
+  float cell_voltage_min_change_{0.001f};  // volts; suppress sub-threshold cell noise
 
   sensor::Sensor *voltage_{nullptr};
   sensor::Sensor *current_{nullptr};
