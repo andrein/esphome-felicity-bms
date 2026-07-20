@@ -28,6 +28,7 @@ SIMPLE = {
     "current": ("set_current_sensor", UNIT_AMPERE, DEVICE_CLASS_CURRENT, 1, False),
     "power": ("set_power_sensor", UNIT_WATT, DEVICE_CLASS_POWER, 0, False),
     "soc": ("set_soc_sensor", UNIT_PERCENT, DEVICE_CLASS_BATTERY, 1, False),
+    "soh": ("set_soh_sensor", UNIT_PERCENT, None, 1, True),
     "min_cell_voltage": ("set_min_cell_voltage_sensor", UNIT_VOLT, DEVICE_CLASS_VOLTAGE, 3, True),
     "max_cell_voltage": ("set_max_cell_voltage_sensor", UNIT_VOLT, DEVICE_CLASS_VOLTAGE, 3, True),
     "cell_delta": ("set_cell_delta_sensor", UNIT_MILLIVOLT, None, 0, True),

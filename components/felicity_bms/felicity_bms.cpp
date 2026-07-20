@@ -1,5 +1,6 @@
 #include "felicity_bms.h"
 #include "esphome/core/log.h"
+#include "esphome/core/hal.h"
 #include "esphome/components/json/json_util.h"
 
 #include <cmath>
@@ -39,6 +40,10 @@ static espbt::ESPBTUUID tx_uuid() {
 
 void FelicityBMS::dump_config() {
   ESP_LOGCONFIG(TAG, "Felicity BMS (update every %u ms)", (unsigned) this->get_update_interval());
+}
+
+uint32_t FelicityBMS::get_last_raw_frame_age_ms() const {
+  return this->last_frame_.empty() ? 0 : (millis() - this->last_frame_ms_);
 }
 
 void FelicityBMS::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
@@ -122,6 +127,8 @@ void FelicityBMS::feed_(const uint8_t *data, uint16_t len) {
 }
 
 void FelicityBMS::handle_frame_(const std::string &frame) {
+  this->last_frame_ = frame;
+  this->last_frame_ms_ = millis();
   ESP_LOGV(TAG, "raw frame: %s", frame.c_str());
   json::parse_json(frame, [this](JsonObject root) -> bool {
     if (root["CommVer"].as<int>() != 1)
@@ -146,8 +153,12 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
     pub(this->power_, v * i);
 
     JsonArray soc = root["BatsocList"].as<JsonArray>();
-    if (!soc.isNull())
+    if (!soc.isNull()) {
       pub(this->soc_, soc[0][0].as<long>() / 100.0f);
+      long soh = soc[0][1].as<long>();  // BatsocList[0][1] = state of health (0.1 %)
+      if (soh > 0)
+        pub(this->soh_, soh / 10.0f);
+    }
 
     JsonArray cells = root["BatcelList"][0].as<JsonArray>();
     if (!cells.isNull()) {
@@ -191,10 +202,10 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
         pub(this->max_temperature_, tmax);
     }
 
-    // Raw codes exposed verbatim: Felicity doesn't document the bit layout, so the
-    // value is the only way to tell conditions apart (and to correlate with events).
-    long fault = root["Bfault"].as<long>();
-    long warning = root["Bwarn"].as<long>();
+    // Per-pack flags. BB* is this pack's own (differs across packs); B* is the
+    // bank aggregate every pack echoes. Bit layout is undocumented, hence raw.
+    long fault = root["BBfault"].as<long>();
+    long warning = root["BBwarn"].as<long>();
     pub(this->fault_code_, (float) fault);
     pub(this->warning_code_, (float) warning);
     pub(this->fault_, fault != 0);

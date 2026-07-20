@@ -9,6 +9,15 @@ esp32:
 
 logger:
 api:
+  # Optional: omit `actions:` and no debug service exists. Returns the raw frame.
+  actions:
+    - action: felicity_dump_raw
+      supports_response: only
+      then:
+        - api.respond:
+            data: !lambda |-
+              root["raw"] = id(bat).get_last_raw_frame();
+              root["age_ms"] = id(bat).get_last_raw_frame_age_ms();
 ota:
   - platform: esphome
 wifi:
@@ -47,6 +56,7 @@ sensor:
     current: {name: Battery Current}
     power: {name: Battery Power}
     soc: {name: Battery SOC}
+    soh: {name: Battery SOH}
     min_cell_voltage: {name: Cell min}
     max_cell_voltage: {name: Cell max}
     cell_delta: {name: Cell delta}
