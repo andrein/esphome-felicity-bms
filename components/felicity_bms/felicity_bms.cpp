@@ -153,8 +153,12 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
     pub(this->power_, v * i);
 
     JsonArray soc = root["BatsocList"].as<JsonArray>();
-    if (!soc.isNull())
+    if (!soc.isNull()) {
       pub(this->soc_, soc[0][0].as<long>() / 100.0f);
+      long soh = soc[0][1].as<long>();  // BatsocList[0][1] = state of health (0.1 %)
+      if (soh > 0)
+        pub(this->soh_, soh / 10.0f);
+    }
 
     JsonArray cells = root["BatcelList"][0].as<JsonArray>();
     if (!cells.isNull()) {
@@ -198,10 +202,10 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
         pub(this->max_temperature_, tmax);
     }
 
-    // Raw codes exposed verbatim: Felicity doesn't document the bit layout, so the
-    // value is the only way to tell conditions apart (and to correlate with events).
-    long fault = root["Bfault"].as<long>();
-    long warning = root["Bwarn"].as<long>();
+    // Per-pack flags. BB* is this pack's own (differs across packs); B* is the
+    // bank aggregate every pack echoes. Bit layout is undocumented, hence raw.
+    long fault = root["BBfault"].as<long>();
+    long warning = root["BBwarn"].as<long>();
     pub(this->fault_code_, (float) fault);
     pub(this->warning_code_, (float) warning);
     pub(this->fault_, fault != 0);

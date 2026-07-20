@@ -26,6 +26,7 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   void set_current_sensor(sensor::Sensor *s) { this->current_ = s; }
   void set_power_sensor(sensor::Sensor *s) { this->power_ = s; }
   void set_soc_sensor(sensor::Sensor *s) { this->soc_ = s; }
+  void set_soh_sensor(sensor::Sensor *s) { this->soh_ = s; }
   void set_min_cell_voltage_sensor(sensor::Sensor *s) { this->min_cell_voltage_ = s; }
   void set_max_cell_voltage_sensor(sensor::Sensor *s) { this->max_cell_voltage_ = s; }
   void set_cell_delta_sensor(sensor::Sensor *s) { this->cell_delta_ = s; }
@@ -59,6 +60,7 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   sensor::Sensor *current_{nullptr};
   sensor::Sensor *power_{nullptr};
   sensor::Sensor *soc_{nullptr};
+  sensor::Sensor *soh_{nullptr};
   sensor::Sensor *min_cell_voltage_{nullptr};
   sensor::Sensor *max_cell_voltage_{nullptr};
   sensor::Sensor *cell_delta_{nullptr};
