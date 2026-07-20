@@ -48,9 +48,21 @@ def _schema(unit, device_class, accuracy, diagnostic):
     return sensor.sensor_schema(**kwargs)
 
 
+# key -> setter; raw BMS codes (undocumented bit layout), diagnostic, not measurements
+CODES = {
+    "fault_code": "set_fault_code_sensor",
+    "warning_code": "set_warning_code_sensor",
+}
+
 _config = {cv.GenerateID(CONF_FELICITY_BMS_ID): cv.use_id(FelicityBMS)}
 for _key, (_setter, _unit, _dc, _acc, _diag) in SIMPLE.items():
     _config[cv.Optional(_key)] = _schema(_unit, _dc, _acc, _diag)
+for _key in CODES:
+    _config[cv.Optional(_key)] = sensor.sensor_schema(
+        accuracy_decimals=0,
+        entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        icon="mdi:alert-circle-outline",
+    )
 for _i in range(1, CELL_COUNT + 1):
     _config[cv.Optional(f"cell_voltage_{_i}")] = _schema(
         UNIT_VOLT, DEVICE_CLASS_VOLTAGE, 3, True
@@ -66,6 +78,10 @@ CONFIG_SCHEMA = cv.Schema(_config)
 async def to_code(config):
     hub = await cg.get_variable(config[CONF_FELICITY_BMS_ID])
     for key, (setter, *_rest) in SIMPLE.items():
+        if key in config:
+            sens = await sensor.new_sensor(config[key])
+            cg.add(getattr(hub, setter)(sens))
+    for key, setter in CODES.items():
         if key in config:
             sens = await sensor.new_sensor(config[key])
             cg.add(getattr(hub, setter)(sens))

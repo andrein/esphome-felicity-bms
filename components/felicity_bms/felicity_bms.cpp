@@ -13,12 +13,13 @@ namespace espbt = esp32_ble_tracker;
 static const char *const TAG = "felicity_bms";
 static const char *const POLL_CMD = "wifilocalMonitor:get dev real infor";
 
-// Publish only on change to keep the API send buffer from overflowing.
-static void pub(sensor::Sensor *s, float v) {
+// Publish only on change (>= min_change) to keep the API send buffer from
+// overflowing and to avoid logging sub-threshold sensor noise into history.
+static void pub(sensor::Sensor *s, float v, float min_change = 1e-4f) {
   if (s == nullptr)
     return;
   bool cur_nan = std::isnan(s->state), v_nan = std::isnan(v);
-  if (cur_nan != v_nan || (!v_nan && std::fabs(s->state - v) > 1e-4f))
+  if (cur_nan != v_nan || (!v_nan && std::fabs(s->state - v) >= min_change))
     s->publish_state(v);
 }
 static void pub(binary_sensor::BinarySensor *s, bool v) {
@@ -129,13 +130,20 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
     // "BattList" holds THIS unit's own V/I; "Batt" is the whole-bank aggregate that
     // every parallel pack echoes (summing it across packs double-counts). Use per-unit.
     JsonArray batt = root["BattList"].as<JsonArray>();
-    if (!batt.isNull()) {
-      float v = batt[0][0].as<long>() / 1000.0f;  // BattList[0][0] = this pack voltage (mV)
-      float i = batt[1][0].as<long>() / 10.0f;    // BattList[1][0] = this pack current (0.1 A)
-      pub(this->voltage_, v);
-      pub(this->current_, i);
-      pub(this->power_, v * i);
+    long v_raw = batt.isNull() ? 0 : batt[0][0].as<long>();  // BattList[0][0] = this pack voltage (mV)
+    // Right after a (re)connect the monitor MCU can answer the poll with a valid JSON
+    // frame whose values are still zero-initialized (0 V / 0 % SOC / 0 °C at once). A
+    // 16s LiFePO4 pack in service never reads outside ~10-70 V, so an implausible pack
+    // voltage marks the whole frame as a stale snapshot — drop it rather than publish.
+    if (v_raw < 10000 || v_raw > 70000) {
+      ESP_LOGD(TAG, "dropping frame with implausible pack voltage %ld mV", v_raw);
+      return true;
     }
+    float v = v_raw / 1000.0f;
+    float i = batt[1][0].as<long>() / 10.0f;  // BattList[1][0] = this pack current (0.1 A)
+    pub(this->voltage_, v);
+    pub(this->current_, i);
+    pub(this->power_, v * i);
 
     JsonArray soc = root["BatsocList"].as<JsonArray>();
     if (!soc.isNull())
@@ -151,7 +159,7 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
         // 0 (or junk) for a cell, and an unconditional publish pushes that 0 into
         // HA history. Same guard the min/max accumulation below uses.
         if (idx < CELL_COUNT && mv > 0 && mv < 60000)
-          pub(this->cell_voltage_[idx], mv / 1000.0f);
+          pub(this->cell_voltage_[idx], mv / 1000.0f, this->cell_voltage_min_change_);
         if (mv > 0 && mv < 60000) {
           if (mv < mn)
             mn = mv;
@@ -183,7 +191,14 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
         pub(this->max_temperature_, tmax);
     }
 
-    pub(this->problem_, (root["Bfault"].as<long>() + root["Bwarn"].as<long>()) != 0);
+    // Raw codes exposed verbatim: Felicity doesn't document the bit layout, so the
+    // value is the only way to tell conditions apart (and to correlate with events).
+    long fault = root["Bfault"].as<long>();
+    long warning = root["Bwarn"].as<long>();
+    pub(this->fault_code_, (float) fault);
+    pub(this->warning_code_, (float) warning);
+    pub(this->fault_, fault != 0);
+    pub(this->warning_, warning != 0);
     return true;
   });
 }
