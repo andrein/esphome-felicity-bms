@@ -19,85 +19,65 @@ from esphome.const import (
 from . import CONF_FELICITY_BMS_ID, FelicityBMS
 
 UNIT_MILLIVOLT = "mV"
-CELL_COUNT = 16
-TEMP_COUNT = 4
 
-# key -> (setter, unit, device_class, accuracy, diagnostic, icon)
-# icon=None keeps the device_class default, used where it's already ideal: SOC
-# (dynamic battery-level icon) and the per-cell temps (thermometer). Elsewhere an
-# explicit icon reads better than the generic/wrong device_class default.
-SIMPLE = {
-    "voltage": ("set_voltage_sensor", UNIT_VOLT, DEVICE_CLASS_VOLTAGE, 2, False, "mdi:flash-outline"),
-    "current": ("set_current_sensor", UNIT_AMPERE, DEVICE_CLASS_CURRENT, 1, False, "mdi:current-dc"),
-    "power": ("set_power_sensor", UNIT_WATT, DEVICE_CLASS_POWER, 0, False, "mdi:lightning-bolt"),
-    "soc": ("set_soc_sensor", UNIT_PERCENT, DEVICE_CLASS_BATTERY, 1, False, None),
-    "soh": ("set_soh_sensor", UNIT_PERCENT, None, 1, True, "mdi:battery-heart-variant"),
-    "min_cell_voltage": ("set_min_cell_voltage_sensor", UNIT_VOLT, DEVICE_CLASS_VOLTAGE, 3, True, "mdi:arrow-collapse-down"),
-    "max_cell_voltage": ("set_max_cell_voltage_sensor", UNIT_VOLT, DEVICE_CLASS_VOLTAGE, 3, True, "mdi:arrow-collapse-up"),
-    "cell_delta": ("set_cell_delta_sensor", UNIT_MILLIVOLT, None, 0, True, "mdi:delta"),
-    "max_temperature": ("set_max_temperature_sensor", UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, 1, True, "mdi:thermometer-high"),
-}
+# One row per sensor. Defaults: state_class=measurement (set None for raw codes),
+# accuracy=0, diagnostic=False, count=1 (>1 expands to <key>_1..N with an indexed
+# setter). Omit `icon` to keep the device_class default (SOC's dynamic battery
+# level, temps' thermometer). Omit `unit`/`device_class` when there isn't one.
+SENSORS = [
+    {"key": "voltage", "setter": "set_voltage_sensor", "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 2, "icon": "mdi:flash-outline"},
+    {"key": "current", "setter": "set_current_sensor", "unit": UNIT_AMPERE, "device_class": DEVICE_CLASS_CURRENT, "accuracy": 1, "icon": "mdi:current-dc"},
+    {"key": "power", "setter": "set_power_sensor", "unit": UNIT_WATT, "device_class": DEVICE_CLASS_POWER, "icon": "mdi:lightning-bolt"},
+    {"key": "soc", "setter": "set_soc_sensor", "unit": UNIT_PERCENT, "device_class": DEVICE_CLASS_BATTERY, "accuracy": 1},
+    {"key": "soh", "setter": "set_soh_sensor", "unit": UNIT_PERCENT, "accuracy": 1, "diagnostic": True, "icon": "mdi:battery-heart-variant"},
+    {"key": "min_cell_voltage", "setter": "set_min_cell_voltage_sensor", "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 3, "diagnostic": True, "icon": "mdi:arrow-collapse-down"},
+    {"key": "max_cell_voltage", "setter": "set_max_cell_voltage_sensor", "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 3, "diagnostic": True, "icon": "mdi:arrow-collapse-up"},
+    {"key": "cell_delta", "setter": "set_cell_delta_sensor", "unit": UNIT_MILLIVOLT, "diagnostic": True, "icon": "mdi:delta"},
+    {"key": "max_temperature", "setter": "set_max_temperature_sensor", "unit": UNIT_CELSIUS, "device_class": DEVICE_CLASS_TEMPERATURE, "accuracy": 1, "diagnostic": True, "icon": "mdi:thermometer-high"},
+    # Raw BMS codes: undocumented bit layout, not a measurement (no state_class).
+    {"key": "fault_code", "setter": "set_fault_code_sensor", "state_class": None, "diagnostic": True, "icon": "mdi:alert-octagon"},
+    {"key": "warning_code", "setter": "set_warning_code_sensor", "state_class": None, "diagnostic": True, "icon": "mdi:alert"},
+    # Arrays: <key>_1..N, setter takes a zero-based index.
+    {"key": "cell_voltage", "setter": "set_cell_voltage_sensor", "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 3, "diagnostic": True, "icon": "mdi:battery-outline", "count": 16},
+    {"key": "temperature", "setter": "set_temperature_sensor", "unit": UNIT_CELSIUS, "device_class": DEVICE_CLASS_TEMPERATURE, "accuracy": 1, "diagnostic": True, "count": 4},
+]
 
 
-def _schema(unit, device_class, accuracy, diagnostic, icon=None):
-    kwargs = dict(
-        unit_of_measurement=unit,
-        accuracy_decimals=accuracy,
-        state_class=STATE_CLASS_MEASUREMENT,
-    )
-    if device_class is not None:
-        kwargs["device_class"] = device_class
-    if diagnostic:
+def _schema(row):
+    kwargs = {"accuracy_decimals": row.get("accuracy", 0)}
+    if "unit" in row:
+        kwargs["unit_of_measurement"] = row["unit"]
+    if "device_class" in row:
+        kwargs["device_class"] = row["device_class"]
+    state_class = row.get("state_class", STATE_CLASS_MEASUREMENT)
+    if state_class is not None:
+        kwargs["state_class"] = state_class
+    if row.get("diagnostic"):
         kwargs["entity_category"] = ENTITY_CATEGORY_DIAGNOSTIC
-    if icon is not None:
-        kwargs["icon"] = icon
+    if "icon" in row:
+        kwargs["icon"] = row["icon"]
     return sensor.sensor_schema(**kwargs)
 
 
-# key -> (setter, icon); raw BMS codes (undocumented bit layout), diagnostic, not measurements
-CODES = {
-    "fault_code": ("set_fault_code_sensor", "mdi:alert-octagon"),
-    "warning_code": ("set_warning_code_sensor", "mdi:alert"),
-}
+def _keys(row):
+    n = row.get("count", 1)
+    return [row["key"]] if n == 1 else [f"{row['key']}_{i}" for i in range(1, n + 1)]
 
-_config = {cv.GenerateID(CONF_FELICITY_BMS_ID): cv.use_id(FelicityBMS)}
-for _key, (_setter, _unit, _dc, _acc, _diag, _icon) in SIMPLE.items():
-    _config[cv.Optional(_key)] = _schema(_unit, _dc, _acc, _diag, _icon)
-for _key, (_setter, _icon) in CODES.items():
-    _config[cv.Optional(_key)] = sensor.sensor_schema(
-        accuracy_decimals=0,
-        entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
-        icon=_icon,
-    )
-for _i in range(1, CELL_COUNT + 1):
-    _config[cv.Optional(f"cell_voltage_{_i}")] = _schema(
-        UNIT_VOLT, DEVICE_CLASS_VOLTAGE, 3, True, "mdi:battery-outline"
-    )
-for _i in range(1, TEMP_COUNT + 1):
-    _config[cv.Optional(f"temperature_{_i}")] = _schema(
-        UNIT_CELSIUS, DEVICE_CLASS_TEMPERATURE, 1, True
-    )
 
-CONFIG_SCHEMA = cv.Schema(_config)
+CONFIG_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(CONF_FELICITY_BMS_ID): cv.use_id(FelicityBMS),
+        **{cv.Optional(key): _schema(row) for row in SENSORS for key in _keys(row)},
+    }
+)
 
 
 async def to_code(config):
     hub = await cg.get_variable(config[CONF_FELICITY_BMS_ID])
-    for key, (setter, *_rest) in SIMPLE.items():
-        if key in config:
+    for row in SENSORS:
+        setter = getattr(hub, row["setter"])
+        for idx, key in enumerate(_keys(row)):
+            if key not in config:
+                continue
             sens = await sensor.new_sensor(config[key])
-            cg.add(getattr(hub, setter)(sens))
-    for key, (setter, _icon) in CODES.items():
-        if key in config:
-            sens = await sensor.new_sensor(config[key])
-            cg.add(getattr(hub, setter)(sens))
-    for i in range(1, CELL_COUNT + 1):
-        key = f"cell_voltage_{i}"
-        if key in config:
-            sens = await sensor.new_sensor(config[key])
-            cg.add(hub.set_cell_voltage_sensor(i - 1, sens))
-    for i in range(1, TEMP_COUNT + 1):
-        key = f"temperature_{i}"
-        if key in config:
-            sens = await sensor.new_sensor(config[key])
-            cg.add(hub.set_temperature_sensor(i - 1, sens))
+            cg.add(setter(sens) if row.get("count", 1) == 1 else setter(idx, sens))
