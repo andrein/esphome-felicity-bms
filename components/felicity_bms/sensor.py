@@ -20,10 +20,11 @@ from . import CONF_FELICITY_BMS_ID, FelicityBMS
 
 UNIT_MILLIVOLT = "mV"
 
-# One row per sensor. Defaults: state_class=measurement (set None for raw codes),
-# accuracy=0, diagnostic=False, count=1 (>1 expands to <key>_1..N with an indexed
-# setter). Omit `icon` to keep the device_class default (SOC's dynamic battery
-# level, temps' thermometer). Omit `unit`/`device_class` when there isn't one.
+# One row per sensor. Defaults: measurement=True (measurement state_class; set
+# False for raw codes so they don't get bogus long-term stats), accuracy=0,
+# diagnostic=False, count=1 (>1 expands to <key>_1..N with an indexed setter).
+# Omit `icon` to keep the device_class default (SOC's dynamic battery level,
+# temps' thermometer). Omit `unit`/`device_class` when there isn't one.
 SENSORS = [
     {"key": "voltage", "setter": "set_voltage_sensor", "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 2, "icon": "mdi:flash-outline"},
     {"key": "current", "setter": "set_current_sensor", "unit": UNIT_AMPERE, "device_class": DEVICE_CLASS_CURRENT, "accuracy": 1, "icon": "mdi:current-dc"},
@@ -35,8 +36,8 @@ SENSORS = [
     {"key": "cell_delta", "setter": "set_cell_delta_sensor", "unit": UNIT_MILLIVOLT, "diagnostic": True, "icon": "mdi:delta"},
     {"key": "max_temperature", "setter": "set_max_temperature_sensor", "unit": UNIT_CELSIUS, "device_class": DEVICE_CLASS_TEMPERATURE, "accuracy": 1, "diagnostic": True, "icon": "mdi:thermometer-high"},
     # Raw BMS codes: undocumented bit layout, not a measurement (no state_class).
-    {"key": "fault_code", "setter": "set_fault_code_sensor", "state_class": None, "diagnostic": True, "icon": "mdi:alert-octagon"},
-    {"key": "warning_code", "setter": "set_warning_code_sensor", "state_class": None, "diagnostic": True, "icon": "mdi:alert"},
+    {"key": "fault_code", "setter": "set_fault_code_sensor", "measurement": False, "diagnostic": True, "icon": "mdi:alert-octagon"},
+    {"key": "warning_code", "setter": "set_warning_code_sensor", "measurement": False, "diagnostic": True, "icon": "mdi:alert"},
     # Arrays: <key>_1..N, setter takes a zero-based index.
     {"key": "cell_voltage", "setter": "set_cell_voltage_sensor", "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 3, "diagnostic": True, "icon": "mdi:battery-outline", "count": 16},
     {"key": "temperature", "setter": "set_temperature_sensor", "unit": UNIT_CELSIUS, "device_class": DEVICE_CLASS_TEMPERATURE, "accuracy": 1, "diagnostic": True, "count": 4},
@@ -49,9 +50,8 @@ def _schema(row):
         kwargs["unit_of_measurement"] = row["unit"]
     if "device_class" in row:
         kwargs["device_class"] = row["device_class"]
-    state_class = row.get("state_class", STATE_CLASS_MEASUREMENT)
-    if state_class is not None:
-        kwargs["state_class"] = state_class
+    if row.get("measurement", True):
+        kwargs["state_class"] = STATE_CLASS_MEASUREMENT
     if row.get("diagnostic"):
         kwargs["entity_category"] = ENTITY_CATEGORY_DIAGNOSTIC
     if "icon" in row:
