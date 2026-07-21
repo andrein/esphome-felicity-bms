@@ -84,11 +84,13 @@ binary_sensor:
     warning: {name: Warning}
 ```
 
-`fault`/`warning` mirror the BMS `Bfault`/`Bwarn` words individually — alert on
-`fault` if you don't want notifications for benign warnings (e.g. the cell
-overvoltage warning some packs raise at top of charge). `fault_code` and
-`warning_code` expose the raw values; Felicity doesn't document the bit layout,
-so the codes are the only way to tell conditions apart.
+`fault`/`warning` mirror **this pack's own** `BBfault`/`BBwarn` words — the
+per-pack flags, as opposed to the bank-aggregate `Bfault`/`Bwarn` that every
+parallel pack echoes identically. Alert on `fault` if you don't want
+notifications for benign warnings (e.g. the cell overvoltage warning some packs
+raise at top of charge). `fault_code` and `warning_code` expose the raw values;
+Felicity doesn't document the bit layout, so the codes are the only way to tell
+conditions apart.
 
 Frames whose pack voltage is implausible (outside 10–70 V) are dropped whole:
 right after a (re)connect the battery's monitor MCU can answer with a valid but
@@ -102,6 +104,11 @@ recorder history and makes 16-cell graphs slow to load. `cell_voltage_min_change
 (default `1mV`) sets the minimum per-cell change that gets published — raise it
 to thin history further (`2mV` ≈ 3.5× fewer points, `5mV` ≈ 12×), all still far
 below any cell imbalance worth acting on.
+
+## Protocol
+
+[PROTOCOL.md](PROTOCOL.md) documents the Felicity BLE JSON frame field by field —
+scalings, which values are per-pack vs bank, and how firmly each is pinned down.
 
 ## License
 
