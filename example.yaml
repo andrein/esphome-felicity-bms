@@ -9,15 +9,25 @@ esp32:
 
 logger:
 api:
-  # Optional: omit `actions:` and no debug service exists. Returns the raw frame.
+  # Optional debug action: send a poll command and return the frame it produces.
+  # `cmd` defaults to the real-info frame; pass another READ poll to fetch a
+  # different frame type, e.g. "wifilocalMonitor:get dev basice infor" for the
+  # version/basic-info frame. Read (`get`) commands only — don't send writes here.
   actions:
-    - action: felicity_dump_raw
+    - action: felicity_frame
+      variables:
+        cmd: string
       supports_response: only
       then:
+        - lambda: |-
+            id(bat).request_frame(cmd.empty() ? "wifilocalMonitor:get dev real infor" : cmd);
+        - wait_until:
+            condition:
+              lambda: 'return id(bat).frame_ready();'
+            timeout: 5s
         - api.respond:
             data: !lambda |-
-              root["raw"] = id(bat).get_last_raw_frame();
-              root["age_ms"] = id(bat).get_last_raw_frame_age_ms();
+              root["raw"] = id(bat).get_requested_frame();
 ota:
   - platform: esphome
 wifi:
