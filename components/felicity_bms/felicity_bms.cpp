@@ -98,15 +98,32 @@ void FelicityBMS::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t 
   }
 }
 
-void FelicityBMS::update() {
+bool FelicityBMS::write_command_(const std::string &cmd) {
   if (this->node_state != espbt::ClientState::ESTABLISHED || this->tx_handle_ == 0)
-    return;
+    return false;
   auto status = esp_ble_gattc_write_char(this->parent()->get_gattc_if(), this->parent()->get_conn_id(),
-                                         this->tx_handle_, std::strlen(POLL_CMD),
-                                         reinterpret_cast<uint8_t *>(const_cast<char *>(POLL_CMD)),
+                                         this->tx_handle_, cmd.size(),
+                                         reinterpret_cast<uint8_t *>(const_cast<char *>(cmd.data())),
                                          ESP_GATT_WRITE_TYPE_NO_RSP, ESP_GATT_AUTH_REQ_NONE);
-  if (status != ESP_OK)
-    ESP_LOGW(TAG, "poll write failed, status=%d", status);
+  if (status != ESP_OK) {
+    ESP_LOGW(TAG, "command write failed, status=%d", status);
+    return false;
+  }
+  return true;
+}
+
+void FelicityBMS::update() {
+  this->exchange_.tick();
+  if (this->exchange_.idle())
+    this->exchange_.request(POLL_CMD, [this](const std::string &frame) { this->parse_state_(frame); });
+}
+
+void FelicityBMS::request_frame(const std::string &cmd) {
+  this->requested_ready_ = false;
+  this->exchange_.request(cmd, [this](const std::string &frame) {
+    this->requested_frame_ = frame;
+    this->requested_ready_ = true;
+  });
 }
 
 void FelicityBMS::feed_(const uint8_t *data, uint16_t len) {
@@ -130,6 +147,10 @@ void FelicityBMS::handle_frame_(const std::string &frame) {
   this->last_frame_ = frame;
   this->last_frame_ms_ = millis();
   ESP_LOGV(TAG, "raw frame: %s", frame.c_str());
+  this->exchange_.on_reply(frame);
+}
+
+void FelicityBMS::parse_state_(const std::string &frame) {
   json::parse_json(frame, [this](JsonObject root) -> bool {
     if (root["CommVer"].as<int>() != 1)
       return false;
