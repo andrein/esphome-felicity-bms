@@ -9,18 +9,15 @@ esp32:
 
 logger:
 api:
-  # Optional debug action: send a poll command and return the frame it produces.
-  # `cmd` defaults to the real-info frame; pass another READ poll to fetch a
-  # different frame type, e.g. "wifilocalMonitor:get dev basice infor" for the
-  # version/basic-info frame. Read (`get`) commands only — don't send writes here.
+  # Debug action: fetch any Felicity frame, e.g. cmd="wifilocalMonitor:get dev real infor"
+  # or "...basice infor" (version/basic-info). Read (`get`) commands only — no writes.
   actions:
     - action: felicity_frame
       variables:
         cmd: string
       supports_response: only
       then:
-        - lambda: |-
-            id(bat).request_frame(cmd.empty() ? "wifilocalMonitor:get dev real infor" : cmd);
+        - lambda: 'id(bat).request_frame(cmd);'
         - wait_until:
             condition:
               lambda: 'return id(bat).frame_ready();'
