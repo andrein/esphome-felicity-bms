@@ -66,6 +66,8 @@ sensor:
     soh: {name: Battery SOH}
     min_cell_voltage: {name: Cell min}
     max_cell_voltage: {name: Cell max}
+    max_voltage_cell: {name: Cell max index}
+    min_voltage_cell: {name: Cell min index}
     cell_delta: {name: Cell delta}
     max_temperature: {name: Temp max}
     cell_voltage_1: {name: Cell 01}

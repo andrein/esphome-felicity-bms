@@ -32,6 +32,8 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   void set_soh_sensor(sensor::Sensor *s) { this->soh_ = s; }
   void set_min_cell_voltage_sensor(sensor::Sensor *s) { this->min_cell_voltage_ = s; }
   void set_max_cell_voltage_sensor(sensor::Sensor *s) { this->max_cell_voltage_ = s; }
+  void set_max_voltage_cell_sensor(sensor::Sensor *s) { this->max_voltage_cell_ = s; }
+  void set_min_voltage_cell_sensor(sensor::Sensor *s) { this->min_voltage_cell_ = s; }
   void set_cell_delta_sensor(sensor::Sensor *s) { this->cell_delta_ = s; }
   void set_max_temperature_sensor(sensor::Sensor *s) { this->max_temperature_ = s; }
   void set_cell_voltage_sensor(uint8_t i, sensor::Sensor *s) { this->cell_voltage_[i] = s; }
@@ -77,6 +79,8 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   sensor::Sensor *soh_{nullptr};
   sensor::Sensor *min_cell_voltage_{nullptr};
   sensor::Sensor *max_cell_voltage_{nullptr};
+  sensor::Sensor *max_voltage_cell_{nullptr};  // 0-based index of the highest-voltage cell
+  sensor::Sensor *min_voltage_cell_{nullptr};  // 0-based index of the lowest-voltage cell
   sensor::Sensor *cell_delta_{nullptr};
   sensor::Sensor *max_temperature_{nullptr};
   sensor::Sensor *cell_voltage_[CELL_COUNT]{};

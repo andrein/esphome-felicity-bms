@@ -33,6 +33,10 @@ SENSORS = [
     {"key": "soh", "setter": "set_soh_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_PERCENT, "accuracy": 1, "diagnostic": True, "icon": "mdi:battery-heart-variant"},
     {"key": "min_cell_voltage", "setter": "set_min_cell_voltage_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 3, "diagnostic": True, "icon": "mdi:arrow-collapse-down"},
     {"key": "max_cell_voltage", "setter": "set_max_cell_voltage_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 3, "diagnostic": True, "icon": "mdi:arrow-collapse-up"},
+    # 0-based index of the highest/lowest-voltage cell (which cell, not its voltage);
+    # a position, not a measurement, so no state_class/unit.
+    {"key": "max_voltage_cell", "setter": "set_max_voltage_cell_sensor", "diagnostic": True, "icon": "mdi:battery-arrow-up"},
+    {"key": "min_voltage_cell", "setter": "set_min_voltage_cell_sensor", "diagnostic": True, "icon": "mdi:battery-arrow-down"},
     {"key": "cell_delta", "setter": "set_cell_delta_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_MILLIVOLT, "diagnostic": True, "icon": "mdi:delta"},
     {"key": "max_temperature", "setter": "set_max_temperature_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_CELSIUS, "device_class": DEVICE_CLASS_TEMPERATURE, "accuracy": 1, "diagnostic": True, "icon": "mdi:thermometer-high"},
     # Raw BMS codes: undocumented bitfields, not measurements (no state_class).

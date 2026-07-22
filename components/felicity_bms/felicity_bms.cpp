@@ -207,6 +207,14 @@ void FelicityBMS::parse_state_(const std::string &frame) {
       }
     }
 
+    // BMaxMin = [[max_cell_mV, min_cell_mV], [highest_cell_idx, lowest_cell_idx]].
+    // Element [1] carries the 0-based indices of the highest- and lowest-voltage cells.
+    JsonArray maxmin_idx = root["BMaxMin"][1].as<JsonArray>();
+    if (!maxmin_idx.isNull()) {
+      pub(this->max_voltage_cell_, (float) maxmin_idx[0].as<long>());  // highest-voltage cell (0-based)
+      pub(this->min_voltage_cell_, (float) maxmin_idx[1].as<long>());  // lowest-voltage cell (0-based)
+    }
+
     JsonArray temps = root["BtemList"][0].as<JsonArray>();
     if (!temps.isNull()) {
       float tmax = -1000.0f;
