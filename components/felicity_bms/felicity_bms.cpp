@@ -231,6 +231,16 @@ void FelicityBMS::parse_state_(const std::string &frame) {
         pub(this->max_temperature_, tmax);
     }
 
+    // BLVolCu = per-pack limits [[CVL, DVL], [CCL, DCL]]; voltages ÷10 → V, currents
+    // ÷10 → A. CCL is dynamic — the BMS ramps it toward 0 as the pack fills.
+    JsonArray lim = root["BLVolCu"].as<JsonArray>();
+    if (!lim.isNull()) {
+      pub(this->charge_voltage_limit_, lim[0][0].as<long>() / 10.0f);
+      pub(this->discharge_voltage_limit_, lim[0][1].as<long>() / 10.0f);
+      pub(this->charge_current_limit_, lim[1][0].as<long>() / 10.0f);
+      pub(this->discharge_current_limit_, lim[1][1].as<long>() / 10.0f);
+    }
+
     // Per-pack flags. BB* is this pack's own (differs across packs); B* is the
     // bank aggregate every pack echoes. Bit layout is undocumented, hence raw.
     long fault = root["BBfault"].as<long>();
