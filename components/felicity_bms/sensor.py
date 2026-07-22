@@ -38,7 +38,6 @@ SENSORS = [
     {"key": "max_voltage_cell", "setter": "set_max_voltage_cell_sensor", "diagnostic": True, "icon": "mdi:battery-arrow-up"},
     {"key": "min_voltage_cell", "setter": "set_min_voltage_cell_sensor", "diagnostic": True, "icon": "mdi:battery-arrow-down"},
     {"key": "cell_delta", "setter": "set_cell_delta_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_MILLIVOLT, "diagnostic": True, "icon": "mdi:delta"},
-    {"key": "max_temperature", "setter": "set_max_temperature_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_CELSIUS, "device_class": DEVICE_CLASS_TEMPERATURE, "accuracy": 1, "diagnostic": True, "icon": "mdi:thermometer-high"},
     # Per-pack charge/discharge limits (BLVolCu). CCL is dynamic — ramps to 0 at full.
     {"key": "charge_voltage_limit", "setter": "set_charge_voltage_limit_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 1, "diagnostic": True, "icon": "mdi:arrow-up-bold"},
     {"key": "discharge_voltage_limit", "setter": "set_discharge_voltage_limit_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 1, "diagnostic": True, "icon": "mdi:arrow-down-bold"},

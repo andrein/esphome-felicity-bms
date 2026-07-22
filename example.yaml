@@ -69,7 +69,6 @@ sensor:
     max_voltage_cell: {name: Cell max index}
     min_voltage_cell: {name: Cell min index}
     cell_delta: {name: Cell delta}
-    max_temperature: {name: Temp max}
     charge_voltage_limit: {name: Charge voltage limit}
     discharge_voltage_limit: {name: Discharge voltage limit}
     charge_current_limit: {name: Charge current limit}

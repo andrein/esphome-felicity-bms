@@ -35,7 +35,6 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   void set_max_voltage_cell_sensor(sensor::Sensor *s) { this->max_voltage_cell_ = s; }
   void set_min_voltage_cell_sensor(sensor::Sensor *s) { this->min_voltage_cell_ = s; }
   void set_cell_delta_sensor(sensor::Sensor *s) { this->cell_delta_ = s; }
-  void set_max_temperature_sensor(sensor::Sensor *s) { this->max_temperature_ = s; }
   void set_charge_voltage_limit_sensor(sensor::Sensor *s) { this->charge_voltage_limit_ = s; }
   void set_discharge_voltage_limit_sensor(sensor::Sensor *s) { this->discharge_voltage_limit_ = s; }
   void set_charge_current_limit_sensor(sensor::Sensor *s) { this->charge_current_limit_ = s; }
@@ -86,7 +85,6 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   sensor::Sensor *max_voltage_cell_{nullptr};  // 0-based index of the highest-voltage cell
   sensor::Sensor *min_voltage_cell_{nullptr};  // 0-based index of the lowest-voltage cell
   sensor::Sensor *cell_delta_{nullptr};
-  sensor::Sensor *max_temperature_{nullptr};
   sensor::Sensor *charge_voltage_limit_{nullptr};     // BLVolCu[0][0]
   sensor::Sensor *discharge_voltage_limit_{nullptr};  // BLVolCu[0][1]
   sensor::Sensor *charge_current_limit_{nullptr};     // BLVolCu[1][0], dynamic (→0 at full)

@@ -215,18 +215,14 @@ void FelicityBMS::parse_state_(const std::string &frame) {
 
     JsonArray temps = root["BtemList"][0].as<JsonArray>();
     if (!temps.isNull()) {
-      float tmax = -1000.0f;
       uint8_t idx = 0;
       for (JsonVariant tv : temps) {
+        if (idx >= TEMP_COUNT)
+          break;
         long raw = tv.as<long>();
-        if (idx < TEMP_COUNT)
-          pub(this->temperature_[idx], (raw == 32767) ? NAN : raw / 10.0f);
-        if (raw != 32767 && raw / 10.0f > tmax)
-          tmax = raw / 10.0f;
+        pub(this->temperature_[idx], (raw == 32767) ? NAN : raw / 10.0f);
         idx++;
       }
-      if (tmax > -1000.0f)
-        pub(this->max_temperature_, tmax);
     }
 
     // BLVolCu = per-pack limits [[CVL, DVL], [CCL, DCL]]; voltages ÷10 → V, currents
