@@ -183,32 +183,30 @@ void FelicityBMS::parse_state_(const std::string &frame) {
 
     JsonArray cells = root["BatcelList"][0].as<JsonArray>();
     if (!cells.isNull()) {
-      long mn = 1000000, mx = -1000000;
       uint8_t idx = 0;
       for (JsonVariant cv : cells) {
         long mv = cv.as<long>();
         // Only publish plausible readings; a garbled/partial BLE frame can yield
         // 0 (or junk) for a cell, and an unconditional publish pushes that 0 into
-        // HA history. Same guard the min/max accumulation below uses.
+        // HA history.
         if (idx < CELL_COUNT && mv > 0 && mv < 60000)
           pub(this->cell_voltage_[idx], mv / 1000.0f, this->cell_voltage_min_change_);
-        if (mv > 0 && mv < 60000) {
-          if (mv < mn)
-            mn = mv;
-          if (mv > mx)
-            mx = mv;
-        }
         idx++;
-      }
-      if (mx >= mn) {
-        pub(this->min_cell_voltage_, mn / 1000.0f);
-        pub(this->max_cell_voltage_, mx / 1000.0f);
-        pub(this->cell_delta_, (float) (mx - mn));
       }
     }
 
     // BMaxMin = [[max_cell_mV, min_cell_mV], [highest_cell_idx, lowest_cell_idx]].
-    // Element [1] carries the 0-based indices of the highest- and lowest-voltage cells.
+    // Take the extremes/delta straight from the BMS rather than recomputing over cells.
+    JsonArray maxmin_v = root["BMaxMin"][0].as<JsonArray>();
+    if (!maxmin_v.isNull()) {
+      long mx = maxmin_v[0].as<long>();  // highest cell mV
+      long mn = maxmin_v[1].as<long>();  // lowest cell mV
+      if (mn > 0 && mx > 0 && mx >= mn) {
+        pub(this->max_cell_voltage_, mx / 1000.0f);
+        pub(this->min_cell_voltage_, mn / 1000.0f);
+        pub(this->cell_delta_, (float) (mx - mn));
+      }
+    }
     JsonArray maxmin_idx = root["BMaxMin"][1].as<JsonArray>();
     if (!maxmin_idx.isNull()) {
       pub(this->max_voltage_cell_, (float) maxmin_idx[0].as<long>());  // highest-voltage cell (0-based)
