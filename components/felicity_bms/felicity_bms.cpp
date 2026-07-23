@@ -183,44 +183,56 @@ void FelicityBMS::parse_state_(const std::string &frame) {
 
     JsonArray cells = root["BatcelList"][0].as<JsonArray>();
     if (!cells.isNull()) {
-      long mn = 1000000, mx = -1000000;
       uint8_t idx = 0;
       for (JsonVariant cv : cells) {
         long mv = cv.as<long>();
         // Only publish plausible readings; a garbled/partial BLE frame can yield
         // 0 (or junk) for a cell, and an unconditional publish pushes that 0 into
-        // HA history. Same guard the min/max accumulation below uses.
+        // HA history.
         if (idx < CELL_COUNT && mv > 0 && mv < 60000)
           pub(this->cell_voltage_[idx], mv / 1000.0f, this->cell_voltage_min_change_);
-        if (mv > 0 && mv < 60000) {
-          if (mv < mn)
-            mn = mv;
-          if (mv > mx)
-            mx = mv;
-        }
         idx++;
       }
-      if (mx >= mn) {
-        pub(this->min_cell_voltage_, mn / 1000.0f);
+    }
+
+    // BMaxMin = [[max_cell_mV, min_cell_mV], [highest_cell_idx, lowest_cell_idx]].
+    // Take the extremes/delta straight from the BMS rather than recomputing over cells.
+    JsonArray maxmin_v = root["BMaxMin"][0].as<JsonArray>();
+    if (!maxmin_v.isNull()) {
+      long mx = maxmin_v[0].as<long>();  // highest cell mV
+      long mn = maxmin_v[1].as<long>();  // lowest cell mV
+      if (mn > 0 && mx > 0 && mx >= mn) {
         pub(this->max_cell_voltage_, mx / 1000.0f);
+        pub(this->min_cell_voltage_, mn / 1000.0f);
         pub(this->cell_delta_, (float) (mx - mn));
       }
+    }
+    JsonArray maxmin_idx = root["BMaxMin"][1].as<JsonArray>();
+    if (!maxmin_idx.isNull()) {
+      pub(this->max_voltage_cell_, (float) maxmin_idx[0].as<long>());  // highest-voltage cell (0-based)
+      pub(this->min_voltage_cell_, (float) maxmin_idx[1].as<long>());  // lowest-voltage cell (0-based)
     }
 
     JsonArray temps = root["BtemList"][0].as<JsonArray>();
     if (!temps.isNull()) {
-      float tmax = -1000.0f;
       uint8_t idx = 0;
       for (JsonVariant tv : temps) {
+        if (idx >= TEMP_COUNT)
+          break;
         long raw = tv.as<long>();
-        if (idx < TEMP_COUNT)
-          pub(this->temperature_[idx], (raw == 32767) ? NAN : raw / 10.0f);
-        if (raw != 32767 && raw / 10.0f > tmax)
-          tmax = raw / 10.0f;
+        pub(this->temperature_[idx], (raw == 32767) ? NAN : raw / 10.0f);
         idx++;
       }
-      if (tmax > -1000.0f)
-        pub(this->max_temperature_, tmax);
+    }
+
+    // BLVolCu = per-pack limits [[CVL, DVL], [CCL, DCL]]; voltages ÷10 → V, currents
+    // ÷10 → A. CCL is dynamic — the BMS ramps it toward 0 as the pack fills.
+    JsonArray lim = root["BLVolCu"].as<JsonArray>();
+    if (!lim.isNull()) {
+      pub(this->charge_voltage_limit_, lim[0][0].as<long>() / 10.0f);
+      pub(this->discharge_voltage_limit_, lim[0][1].as<long>() / 10.0f);
+      pub(this->charge_current_limit_, lim[1][0].as<long>() / 10.0f);
+      pub(this->discharge_current_limit_, lim[1][1].as<long>() / 10.0f);
     }
 
     // Per-pack flags. BB* is this pack's own (differs across packs); B* is the

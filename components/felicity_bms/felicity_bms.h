@@ -32,8 +32,13 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   void set_soh_sensor(sensor::Sensor *s) { this->soh_ = s; }
   void set_min_cell_voltage_sensor(sensor::Sensor *s) { this->min_cell_voltage_ = s; }
   void set_max_cell_voltage_sensor(sensor::Sensor *s) { this->max_cell_voltage_ = s; }
+  void set_max_voltage_cell_sensor(sensor::Sensor *s) { this->max_voltage_cell_ = s; }
+  void set_min_voltage_cell_sensor(sensor::Sensor *s) { this->min_voltage_cell_ = s; }
   void set_cell_delta_sensor(sensor::Sensor *s) { this->cell_delta_ = s; }
-  void set_max_temperature_sensor(sensor::Sensor *s) { this->max_temperature_ = s; }
+  void set_charge_voltage_limit_sensor(sensor::Sensor *s) { this->charge_voltage_limit_ = s; }
+  void set_discharge_voltage_limit_sensor(sensor::Sensor *s) { this->discharge_voltage_limit_ = s; }
+  void set_charge_current_limit_sensor(sensor::Sensor *s) { this->charge_current_limit_ = s; }
+  void set_discharge_current_limit_sensor(sensor::Sensor *s) { this->discharge_current_limit_ = s; }
   void set_cell_voltage_sensor(uint8_t i, sensor::Sensor *s) { this->cell_voltage_[i] = s; }
   void set_temperature_sensor(uint8_t i, sensor::Sensor *s) { this->temperature_[i] = s; }
   void set_cell_voltage_min_change(float v) { this->cell_voltage_min_change_ = v; }
@@ -77,8 +82,13 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   sensor::Sensor *soh_{nullptr};
   sensor::Sensor *min_cell_voltage_{nullptr};
   sensor::Sensor *max_cell_voltage_{nullptr};
+  sensor::Sensor *max_voltage_cell_{nullptr};  // 0-based index of the highest-voltage cell
+  sensor::Sensor *min_voltage_cell_{nullptr};  // 0-based index of the lowest-voltage cell
   sensor::Sensor *cell_delta_{nullptr};
-  sensor::Sensor *max_temperature_{nullptr};
+  sensor::Sensor *charge_voltage_limit_{nullptr};     // BLVolCu[0][0]
+  sensor::Sensor *discharge_voltage_limit_{nullptr};  // BLVolCu[0][1]
+  sensor::Sensor *charge_current_limit_{nullptr};     // BLVolCu[1][0], dynamic (→0 at full)
+  sensor::Sensor *discharge_current_limit_{nullptr};  // BLVolCu[1][1]
   sensor::Sensor *cell_voltage_[CELL_COUNT]{};
   sensor::Sensor *temperature_[TEMP_COUNT]{};
   sensor::Sensor *fault_code_{nullptr};

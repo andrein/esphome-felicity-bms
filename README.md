@@ -68,8 +68,13 @@ sensor:
     soc: {name: SOC}
     min_cell_voltage: {name: Cell min}
     max_cell_voltage: {name: Cell max}
+    max_voltage_cell: {name: Cell max index}   # 0-based index of the highest-voltage cell
+    min_voltage_cell: {name: Cell min index}   # 0-based index of the lowest-voltage cell
     cell_delta: {name: Cell delta}
-    max_temperature: {name: Temp max}
+    charge_voltage_limit: {name: Charge voltage limit}
+    discharge_voltage_limit: {name: Discharge voltage limit}
+    charge_current_limit: {name: Charge current limit}
+    discharge_current_limit: {name: Discharge current limit}
     cell_voltage_1: {name: Cell 01}
     # ... cell_voltage_2 .. cell_voltage_16
     temperature_1: {name: Temp 1}
@@ -96,6 +101,10 @@ zero-initialized snapshot, which would otherwise publish 0 V / 0 % / 0 °C spike
 
 Per-cell voltages, individual temperatures, cell min/max/delta, max temperature
 and the fault/warning flags default to `entity_category: diagnostic`.
+
+`max_voltage_cell`/`min_voltage_cell` report the **0-based index** of the
+highest- and lowest-voltage cell (which cell, not its voltage), as the BMS itself
+reports it — pair them with `cell_delta` to spot a persistently weak cell.
 
 Cells jitter at the mV level every poll, so publishing every change floods
 recorder history and makes 16-cell graphs slow to load. `cell_voltage_min_change`
