@@ -95,6 +95,11 @@ sensor:
     temperature_4: {name: Temp 4}
     fault_code: {name: Fault code}
     warning_code: {name: Warning code}
+    status_code: {name: Status code}
+    heater_status: {name: Heater status}
+    work_mode: {name: Work mode}
+    aux_code_1: {name: Aux code 1}
+    aux_code_2: {name: Aux code 2}
 
 binary_sensor:
   - platform: felicity_bms

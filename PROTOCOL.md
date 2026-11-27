@@ -118,7 +118,9 @@ This pack at `[·][0]`; the sibling pack's slot is `65535` / `-1`.
 | `BMaxMin[1][0]`, `[1][1]` | `2`, `0` | index of highest / lowest cell (0-based) | ✅ |
 | `BtemList[0][0..3]` | `180…` | temperature probes, `÷10` → °C; `32767` = absent | ✅ |
 | `BTemp[0]` | `[190, 180]` | pack temperature (tracks the cell probes), `÷10` → °C | 🟡 |
-| `BTemp[1]` | `[513, 256]` | unknown — takes only a small discrete set (`256`/`259`/`512`/`513`, i.e. near `0x100`/`0x200`) with no intermediate values, so not a linear temperature | ❓ |
+| `BTemp[1][0]` low byte | `513` → `0x01` | index (0-based) of the hottest `BtemList` probe when the high byte is `1`; ties resolve to the lowest index | 🟡 |
+| `BTemp[1][0]` high byte | `513` → `0x02` | `1` or `2`; `2` seen while `BTemp[0][0]` exceeds every `BtemList` probe (as in the sample), so possibly a second sensor group | ❓ |
+| `BTemp[1][1]` | `256` | only `0x0100` observed; by analogy with `[1][0]`, likely the coldest-probe position | ❓ |
 | `BBfault` | `0` | per-pack fault word (raw; bit layout unknown) | ✅ |
 | `BBwarn` | `0` | per-pack warning word (raw; bit layout unknown). `4` observed at top of charge when one cell runs ahead of the rest | ✅ |
 
@@ -154,12 +156,23 @@ per-pack; see the naming note below).
 | Payload | Example | Guess | Conf. |
 |---|---|---|---|
 | `Estate` | `9152` | bank status bitfield (≈ OR of `Bstate`) | ❓ |
-| `Bstate` | `9152` | per-pack status bitfield | ❓ |
+| `Bstate` | `9152` | per-pack status bitfield; see bits below | 🟡 |
 | `workM` | `0` | work-mode index | ❓ |
 | `HtCuSt` | `0` | heater-current status (`0` = not heating) | ❓ |
 | `EMSpara` | `[[2,6]]` | config pair; the `6` may match the app's "Heat Request Curr 6 A" | ❓ |
 | `BMSpara` | `[[2,6]]` | config pair (mirrors `EMSpara` here) | ❓ |
 | `Templist` | `[[180,180],[0,0],[65535,65535],[65535,65535]]` | four 2-probe groups; group 0 equals the active `BtemList` probes (`÷10` → °C), group 1 reads ~`0`, groups 2–3 absent (`65535`); purpose/redundancy with `BtemList` unclear | ❓ |
+
+#### `Bstate` bits
+
+| Bits | Mask | Decode | Conf. |
+|---|---|---|---|
+| 6–9 | `0x03C0` | always set; meaning unknown | ❓ |
+| 12 | `0x1000` | discharging | ✅ |
+| 13 | `0x2000` | charging | ✅ |
+
+Observed values: `960` (`0x03C0`, idle), `5056` (`0x13C0`, discharging), `9152`
+(`0x23C0`, charging).
 
 #### Per-pack vs bank — naming convention
 

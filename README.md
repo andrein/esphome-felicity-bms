@@ -81,6 +81,11 @@ sensor:
     # ... temperature_2 .. temperature_4
     fault_code: {name: Fault code}
     warning_code: {name: Warning code}
+    status_code: {name: Status code}
+    heater_status: {name: Heater status}
+    work_mode: {name: Work mode}
+    aux_code_1: {name: Aux code 1}
+    aux_code_2: {name: Aux code 2}
 
 binary_sensor:
   - platform: felicity_bms
@@ -97,12 +102,17 @@ raise at top of charge). `fault_code` and `warning_code` expose the raw values;
 Felicity doesn't document the bit layout, so the codes are the only way to tell
 conditions apart.
 
+`status_code`, `heater_status`, `work_mode` and `aux_code_1`/`aux_code_2` publish
+fields whose meaning is not decoded yet (`Bstate`, `HtCuSt`, `workM`, `BTemp[1]`),
+as raw integers. They exist so their history can be lined up against current,
+temperature and SOC; treat any interpretation as unconfirmed.
+
 Frames whose pack voltage is implausible (outside 10–70 V) are dropped whole:
 right after a (re)connect the battery's monitor MCU can answer with a valid but
 zero-initialized snapshot, which would otherwise publish 0 V / 0 % / 0 °C spikes.
 
 Per-cell voltages, individual temperatures, cell min/max/delta, max temperature
-and the fault/warning flags default to `entity_category: diagnostic`.
+the fault/warning flags and the raw codes default to `entity_category: diagnostic`.
 
 `max_voltage_cell`/`min_voltage_cell` report the **0-based index** of the
 highest- and lowest-voltage cell (which cell, not its voltage), as the BMS itself

@@ -46,8 +46,15 @@ SENSORS = [
     # Raw BMS codes: undocumented bitfields, not measurements (no state_class).
     {"key": "fault_code", "setter": "set_fault_code_sensor", "diagnostic": True, "icon": "mdi:alert-octagon"},
     {"key": "warning_code", "setter": "set_warning_code_sensor", "diagnostic": True, "icon": "mdi:alert"},
+    # Undecoded state fields, raw. Bstate: per-pack status bitfield; HtCuSt: presumed
+    # heater status (only 0 observed so far); workM: work mode; BTemp[1]: two codes that
+    # only take a few discrete values (256/259/512/513).
+    {"key": "status_code", "setter": "set_status_code_sensor", "diagnostic": True, "icon": "mdi:list-status"},
+    {"key": "heater_status", "setter": "set_heater_status_sensor", "diagnostic": True, "icon": "mdi:heating-coil"},
+    {"key": "work_mode", "setter": "set_work_mode_sensor", "diagnostic": True, "icon": "mdi:cog-outline"},
     # Arrays: <key>_1..N, setter takes a zero-based index.
     {"key": "cell_voltage", "setter": "set_cell_voltage_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_VOLT, "device_class": DEVICE_CLASS_VOLTAGE, "accuracy": 3, "diagnostic": True, "icon": "mdi:battery-outline", "count": 16},
+    {"key": "aux_code", "setter": "set_aux_code_sensor", "diagnostic": True, "icon": "mdi:help-circle-outline", "count": 2},
     {"key": "temperature", "setter": "set_temperature_sensor", "state_class": STATE_CLASS_MEASUREMENT, "unit": UNIT_CELSIUS, "device_class": DEVICE_CLASS_TEMPERATURE, "accuracy": 1, "diagnostic": True, "count": 4},
 ]
 
