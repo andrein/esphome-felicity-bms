@@ -44,6 +44,10 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   void set_cell_voltage_min_change(float v) { this->cell_voltage_min_change_ = v; }
   void set_fault_code_sensor(sensor::Sensor *s) { this->fault_code_ = s; }
   void set_warning_code_sensor(sensor::Sensor *s) { this->warning_code_ = s; }
+  void set_status_code_sensor(sensor::Sensor *s) { this->status_code_ = s; }
+  void set_heater_status_sensor(sensor::Sensor *s) { this->heater_status_ = s; }
+  void set_aux_code_sensor(uint8_t i, sensor::Sensor *s) { this->aux_code_[i] = s; }
+  void set_work_mode_sensor(sensor::Sensor *s) { this->work_mode_ = s; }
   void set_fault_binary_sensor(binary_sensor::BinarySensor *s) { this->fault_ = s; }
   void set_warning_binary_sensor(binary_sensor::BinarySensor *s) { this->warning_ = s; }
 
@@ -93,6 +97,10 @@ class FelicityBMS : public PollingComponent, public ble_client::BLEClientNode {
   sensor::Sensor *temperature_[TEMP_COUNT]{};
   sensor::Sensor *fault_code_{nullptr};
   sensor::Sensor *warning_code_{nullptr};
+  sensor::Sensor *status_code_{nullptr};    // Bstate
+  sensor::Sensor *heater_status_{nullptr};  // HtCuSt
+  sensor::Sensor *aux_code_[2]{};           // BTemp[1][0..1]
+  sensor::Sensor *work_mode_{nullptr};      // workM
   binary_sensor::BinarySensor *fault_{nullptr};
   binary_sensor::BinarySensor *warning_{nullptr};
 };

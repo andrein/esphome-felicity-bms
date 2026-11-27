@@ -243,6 +243,21 @@ void FelicityBMS::parse_state_(const std::string &frame) {
     pub(this->warning_code_, (float) warning);
     pub(this->fault_, fault != 0);
     pub(this->warning_, warning != 0);
+
+    // Undecoded state fields, published raw so their history can be correlated
+    // with current/temperature to work out the meaning.
+    auto pub_raw = [](sensor::Sensor *s, JsonVariant v) {
+      if (!v.isNull())
+        pub(s, (float) v.as<long>());
+    };
+    pub_raw(this->status_code_, root["Bstate"]);
+    pub_raw(this->heater_status_, root["HtCuSt"]);
+    pub_raw(this->work_mode_, root["workM"]);
+    JsonArray aux = root["BTemp"][1].as<JsonArray>();
+    if (!aux.isNull()) {
+      for (uint8_t k = 0; k < 2; k++)
+        pub_raw(this->aux_code_[k], aux[k]);
+    }
     return true;
   });
 }
